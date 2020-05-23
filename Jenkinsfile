@@ -19,8 +19,7 @@ pipeline {
         }
         stage('Upload to Docker'){
             steps {
-                docker tag $(docker images --filter=reference='capstone-rest:latest' --format "{{.ID}}")  turnertechappdeveloper/capstone-rest
-                docker push turnertechappdeveloper/capstone-rest
+                ./upload_docker.sh
             }
         }
     }
