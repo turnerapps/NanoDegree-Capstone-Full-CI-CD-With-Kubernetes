@@ -3,21 +3,21 @@ pipeline {
     stages {
         stage('Lint Code'){
             steps {
-                bash '''
+                sh '''
                     eslint ./code
                 '''
             }
         }
         stage('Lint Docker'){
             steps {
-                bash '''
+                sh '''
                     hadolint Dockerfile
                 '''
             }
         }
         stage('Build Docker'){
             steps {
-                bash '''
+                sh '''
                     tag=$(git log -1 --format=%h)
                     docker build -t capstone-rest:$tag -t capstone-rest:latest .
                 '''
@@ -25,7 +25,7 @@ pipeline {
         }
         stage('Upload to Docker'){
             steps {
-                bash '''
+                sh '''
                     ./upload_docker.sh
                 '''
             }
