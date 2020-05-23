@@ -18,8 +18,10 @@ pipeline {
             }
         }
         stage('Upload to Docker'){
-            docker tag $(docker images --filter=reference='capstone-rest:latest' --format "{{.ID}}")  turnertechappdeveloper/capstone-rest
-            docker push turnertechappdeveloper/capstone-rest
+            steps {
+                docker tag $(docker images --filter=reference='capstone-rest:latest' --format "{{.ID}}")  turnertechappdeveloper/capstone-rest
+                docker push turnertechappdeveloper/capstone-rest
+            }
         }
     }
 }
