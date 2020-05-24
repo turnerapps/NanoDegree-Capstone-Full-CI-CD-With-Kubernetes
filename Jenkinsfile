@@ -9,7 +9,7 @@ pipeline {
                         projectStartDate:    '2020-05-22',
                         skipFailedBuilds:    true)
                     currentBuild.displayName = BUILD_VERSION_GENERATED
-                    pod_name="rest-${BRANCH_NAME}"
+                    deployment_name="capstone-${BRANCH_NAME}"
                     dockerpath="turnertechappdeveloper/capstone-rest:${currentBuild.displayName}"
                 }
                 echo currentBuild.displayName
@@ -52,9 +52,12 @@ pipeline {
         stage('Update Kubernetes') {
             steps {
                 sh """#!/bin/bash
-                    kubectl set image pod/${pod_name} ${pod_name}=${dockerpath}
+                    kubectl get deployment
+                    kubectl set image deployment/capstone-${BRANCH_NAME} capstone-rest=capstone-rest:${currentBuild.displayName}
+                    kubectl rollout status deployment capstone-${BRANCH_NAME}
+                    sleep 60
+                    kubectl get deployment capstone-${BRANCH_NAME}
                 """
-                sh "kubectl describe pod ${pod_name}"
             }
         }
     }
