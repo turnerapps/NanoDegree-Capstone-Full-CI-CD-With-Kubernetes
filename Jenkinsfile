@@ -37,27 +37,24 @@ pipeline {
         }
         stage('Build Docker'){
             steps {
-                sh 'docker build -t capstone-rest:${currentBuild.displayName} .'
+                sh "docker build -t capstone-rest:${currentBuild.displayName} ."
             }
         }
         stage('Upload to Docker'){
             steps {
-                sh '''#!/bin/bash
-                    dockerpath=turnertechappdeveloper/capstone-rest:${currentBuild.displayName}
-                    docker tag $(docker images --filter=reference='capstone-rest:${currentBuild.displayName}' --format "{{.ID}}") $dockerpath
-                    docker push $dockerpath
-                '''
+                dockerpath="turnertechappdeveloper/capstone-rest:${currentBuild.displayName}"
+                sh """#!/bin/bash
+                    docker tag $(docker images --filter=reference='capstone-rest:${currentBuild.displayName}' --format "{{.ID}}") ${dockerpath}
+                    docker push ${dockerpath}
+                """
             }
         }
         stage('Update Kubernetes') {
-            when {
-                branch 'dev'
-            }
             steps {
-                sh '''#!/bin/bash
+                sh """#!/bin/bash
                     kubectl set image pod/${pod_name} ${pod_name}=turnertechappdeveloper/capstone-rest:${currentBuild.displayName}
-                '''
-                sh '''kubectl describe pod rest-dev'''
+                """
+                sh "kubectl describe pod ${pod_name}"
             }
         }
     }
