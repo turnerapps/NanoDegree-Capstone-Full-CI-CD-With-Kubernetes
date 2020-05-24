@@ -37,10 +37,7 @@ pipeline {
         }
         stage('Build Docker'){
             steps {
-                sh '''#!/bin/bash
-                    tag=$(git log -1 --format=%h)
-                    docker build -t capstone-rest:${currentBuild.displayName} .
-                '''
+                sh 'docker build -t capstone-rest:${currentBuild.displayName} .'
             }
         }
         stage('Upload to Docker'){
