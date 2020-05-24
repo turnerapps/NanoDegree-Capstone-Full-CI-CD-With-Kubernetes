@@ -52,7 +52,7 @@ pipeline {
         stage('Update Kubernetes') {
             steps {
                 sh """#!/bin/bash
-                    kubectl set image pod/${pod_name} ${pod_name}=turnertechappdeveloper/capstone-rest:${currentBuild.displayName}
+                    kubectl set image pod/${pod_name} ${pod_name}=${dockerpath}
                 """
                 sh "kubectl describe pod ${pod_name}"
             }
