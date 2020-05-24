@@ -1,6 +1,21 @@
 pipeline {
     agent { label 'slave01' }
     stages {
+        stage('Set Build Number') {
+            steps {
+                script {
+                    BUILD_VERSION_GENERATED = VersionNumber(
+                        versionNumberString: '${BUILDS_ALL_TIME, X}-${BRANCH_NAME}',
+                        projectStartDate:    '2020-05-22',
+                        skipFailedBuilds:    true)
+                    currentBuild.displayName = BUILD_VERSION_GENERATED
+                    pod_name="rest-${BRANCH_NAME}"
+                    dockerpath="turnertechappdeveloper/capstone-rest:${currentBuild.displayName}"
+                }
+                echo currentBuild.displayName
+                echo pod_name
+            }
+        }
         stage('Lint Code'){
             when {
                 branch 'dev'
@@ -21,83 +36,26 @@ pipeline {
                 '''
             }
         }
-        stage('Build Docker Dev'){
-            when {
-                branch 'dev'
-            }
+        stage('Build Docker'){
             steps {
-                sh '''#!/bin/bash
-                    tag=$(git log -1 --format=%h)
-                    docker build -t capstone-rest:$tag -t capstone-rest:dev .
-                '''
+                sh "docker build -t capstone-rest:${currentBuild.displayName} ."
             }
         }
-        stage('Build Docker Prod'){
-            when {
-                branch 'prod'
-            }
+        stage('Upload to Docker'){
             steps {
-                sh '''#!/bin/bash
-                    tag=$(git log -1 --format=%h)
-                    docker build -t capstone-rest:$tag -t capstone-rest:latest .
-                '''
-            }
-        }        
-        stage('Upload to Docker Dev'){
-            when {
-                branch 'dev'
-            }
-            steps {
-                sh '''#!/bin/bash
-                    dockerpath=turnertechappdeveloper/capstone-rest
-                    docker tag $(docker images --filter=reference='capstone-rest:dev' --format "{{.ID}}") $dockerpath
-                    docker push $dockerpath
-                '''
+                sh """#!/bin/bash
+                    docker tag \$(docker images --filter=reference='capstone-rest:${currentBuild.displayName}' --format "{{.ID}}") ${dockerpath}
+                    docker push ${dockerpath}
+                """
             }
         }
-        stage('Upload to Docker Prod'){
-            when {
-                branch 'prod'
-            }
+        stage('Update Kubernetes') {
             steps {
-                sh '''#!/bin/bash
-                    dockerpath=turnertechappdeveloper/capstone-rest
-                    docker tag $(docker images --filter=reference='capstone-rest:latest' --format "{{.ID}}") $dockerpath
-                    docker push $dockerpath
-                '''
+                sh """#!/bin/bash
+                    kubectl set image pod/${pod_name} ${pod_name}=${dockerpath}
+                """
+                sh "kubectl describe pod ${pod_name}"
             }
         }
-        stage('Update Dev Kubernetes') {
-            when {
-                branch 'dev'
-            }
-            steps {
-                sh '''#!/bin/bash
-                    kubectl run rest-dev --image=turnertechappdeveloper/capstone-rest:dev --port=8080
-                    kubectl expose pod rest-dev --type=LoadBalancer --port=8080
-                '''
-                RESULT = sh(
-                    script: "kubectl describe pod rest-dev"
-                    returnStatus: true
-                )
-                echo "Kubernetes Described Pod: ${RESULT}"
-            }
-        }
-        stage('Update Prod Kubernetes') {
-            when {
-                branch 'prod'
-            }
-            steps {
-                sh '''#!/bin/bash
-                    kubectl run rest-prod --image=turnertechappdeveloper/capstone-rest:latest --port=8080
-                    kubectl expose pod rest-prod --type=LoadBalancer --port=8080                    
-                '''
-                RESULT = sh(
-                    script: "kubectl describe pod rest-prod"
-                    returnStatus: true
-                )
-                echo "Kubernetes Described Pod: ${RESULT}"
-            }
-        }        
     }
 }
