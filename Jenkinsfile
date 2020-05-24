@@ -11,6 +11,8 @@ pipeline {
                     currentBuild.displayName = BUILD_VERSION_GENERATED
                     pod_name="rest-${BRANCH_NAME}"
                 }
+                echo currentBuild.displayName
+                echo pod_name
             }
         }
         stage('Lint Code'){
