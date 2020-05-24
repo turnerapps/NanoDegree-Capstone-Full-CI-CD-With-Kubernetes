@@ -13,7 +13,6 @@ pipeline {
                     dockerpath="turnertechappdeveloper/capstone-rest:${currentBuild.displayName}"
                 }
                 echo currentBuild.displayName
-                echo pod_name
             }
         }
         stage('Lint Code'){
@@ -37,11 +36,21 @@ pipeline {
             }
         }
         stage('Build Docker'){
+            when {
+                not {
+                    branch 'master'
+                }
+            }
             steps {
                 sh "docker build -t capstone-rest:${currentBuild.displayName} ."
             }
         }
         stage('Upload to Docker'){
+            when {
+                not {
+                    branch 'master'
+                }
+            }            
             steps {
                 sh """#!/bin/bash
                     docker tag \$(docker images --filter=reference='capstone-rest:${currentBuild.displayName}' --format "{{.ID}}") ${dockerpath}
@@ -50,6 +59,11 @@ pipeline {
             }
         }
         stage('Update Kubernetes') {
+            when {
+                not {
+                    branch 'master'
+                }
+            }            
             steps {
                 sh """#!/bin/bash
                     kubectl get deployment
