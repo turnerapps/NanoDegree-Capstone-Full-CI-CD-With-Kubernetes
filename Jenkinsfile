@@ -49,7 +49,7 @@ pipeline {
             }
             steps {
                 sh '''#!/bin/bash
-                    dockerpath=turnertechappdeveloper/capstone-rest
+                    dockerpath=turnertechappdeveloper/capstone-rest:dev
                     docker tag $(docker images --filter=reference='capstone-rest:dev' --format "{{.ID}}") $dockerpath
                     docker push $dockerpath
                 '''
@@ -61,7 +61,7 @@ pipeline {
             }
             steps {
                 sh '''#!/bin/bash
-                    dockerpath=turnertechappdeveloper/capstone-rest
+                    dockerpath=turnertechappdeveloper/capstone-rest:latest
                     docker tag $(docker images --filter=reference='capstone-rest:latest' --format "{{.ID}}") $dockerpath
                     docker push $dockerpath
                 '''
