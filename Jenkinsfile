@@ -73,13 +73,9 @@ pipeline {
             }
             steps {
                 sh '''#!/bin/bash
-                    kubectl run rest-dev --image=turnertechappdeveloper/capstone-rest:dev --port=8080
-                    kubectl expose pod rest-dev --type=LoadBalancer --port=8080
+                    kubectl set image pod/rest-dev rest-dev=turnertechappdeveloper/capstone-rest:dev
                 '''
-                RESULT = sh(
-                    script: "kubectl describe pod rest-dev"
-                )
-                echo "Kubernetes Described Pod: ${RESULT}"
+                sh '''kubectl describe pod rest-dev'''
             }
         }
         stage('Update Prod Kubernetes') {
@@ -88,13 +84,8 @@ pipeline {
             }
             steps {
                 sh '''#!/bin/bash
-                    kubectl run rest-prod --image=turnertechappdeveloper/capstone-rest:latest --port=8080
-                    kubectl expose pod rest-prod --type=LoadBalancer --port=8080                    
-                '''
-                RESULT = sh(
-                    script: "kubectl describe pod rest-prod"
-                )
-                echo "Kubernetes Described Pod: ${RESULT}"
+                    kubectl set image pod/rest-dev rest-dev=turnertechappdeveloper/capstone-rest:latest                '''
+                sh '''kubectl describe pod rest-prod'''
             }
         }        
     }
