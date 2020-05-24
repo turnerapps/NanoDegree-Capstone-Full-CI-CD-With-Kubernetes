@@ -44,7 +44,7 @@ pipeline {
         stage('Upload to Docker'){
             steps {
                 sh """#!/bin/bash
-                    docker tag $(docker images --filter=reference='capstone-rest:${currentBuild.displayName}' --format "{{.ID}}") ${dockerpath}
+                    docker tag \$(docker images --filter=reference='capstone-rest:${currentBuild.displayName}' --format "{{.ID}}") ${dockerpath}
                     docker push ${dockerpath}
                 """
             }
