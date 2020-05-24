@@ -27,7 +27,7 @@ pipeline {
             steps {
                 sh '''#!/bin/bash
                     dockerpath=turnertechappdeveloper/capstone-rest
-                    docker tag $(docker images --filter=reference='prediction:latest' --format "{{.ID}}") $dockerpath
+                    docker tag $(docker images --filter=reference='capstone-rest:latest' --format "{{.ID}}") $dockerpath
                     docker push $dockerpath
                 '''
             }
