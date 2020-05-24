@@ -9,6 +9,7 @@ pipeline {
                         projectStartDate:    '2020-05-22',
                         skipFailedBuilds:    true)
                     currentBuild.displayName = BUILD_VERSION_GENERATED
+                    pod_name="rest-${BRANCH_NAME}"
                 }
             }
         }
@@ -54,7 +55,6 @@ pipeline {
                 branch 'dev'
             }
             steps {
-                pod_name="rest-${BRANCH_NAME}"
                 sh '''#!/bin/bash
                     kubectl set image pod/${pod_name} ${pod_name}=turnertechappdeveloper/capstone-rest:${currentBuild.displayName}
                 '''
