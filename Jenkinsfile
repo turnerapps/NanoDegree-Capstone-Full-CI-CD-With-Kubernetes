@@ -66,12 +66,10 @@ pipeline {
             }            
             steps {
                 sh """#!/bin/bash
-                    kubectl get deployment
-                    kubectl set image deployment/capstone-${BRANCH_NAME} capstone-rest=capstone-rest:${currentBuild.displayName}
-                    kubectl rollout status deployment capstone-${BRANCH_NAME}
-                    sleep 60
-                    kubectl get deployment capstone-${BRANCH_NAME}
+                    kubectl set image deployment/capstone-${BRANCH_NAME} capstone-rest=${dockerpath}
                 """
+                sh "kubectl rollout status deployment capstone-${BRANCH_NAME}"
+                sh "kubectl get deployment capstone-${BRANCH_NAME}"
             }
         }
     }
