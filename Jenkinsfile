@@ -78,7 +78,6 @@ pipeline {
                 '''
                 RESULT = sh(
                     script: "kubectl describe pod rest-dev"
-                    returnStatus: true
                 )
                 echo "Kubernetes Described Pod: ${RESULT}"
             }
@@ -94,7 +93,6 @@ pipeline {
                 '''
                 RESULT = sh(
                     script: "kubectl describe pod rest-prod"
-                    returnStatus: true
                 )
                 echo "Kubernetes Described Pod: ${RESULT}"
             }
