@@ -1,6 +1,17 @@
 pipeline {
     agent { label 'slave01' }
     stages {
+        stage('Set Build Number') {
+            steps {
+                script {
+                    BUILD_VERSION_GENERATED = VersionNumber(
+                        versionNumberString: '${BUILDS_ALL_TIME, X}-${BRANCH_NAME}',
+                        projectStartDate:    '2020-05-22',
+                        skipFailedBuilds:    true)
+                    currentBuild.displayName = BUILD_VERSION_GENERATED
+                }
+            }
+        }
         stage('Lint Code'){
             when {
                 branch 'dev'
@@ -21,72 +32,34 @@ pipeline {
                 '''
             }
         }
-        stage('Build Docker Dev'){
-            when {
-                branch 'dev'
-            }
+        stage('Build Docker'){
             steps {
                 sh '''#!/bin/bash
                     tag=$(git log -1 --format=%h)
-                    docker build -t capstone-rest:$tag -t capstone-rest:dev .
+                    docker build -t capstone-rest:${currentBuild.displayName} .
                 '''
             }
         }
-        stage('Build Docker Prod'){
-            when {
-                branch 'prod'
-            }
+        stage('Upload to Docker'){
             steps {
                 sh '''#!/bin/bash
-                    tag=$(git log -1 --format=%h)
-                    docker build -t capstone-rest:$tag -t capstone-rest:latest .
-                '''
-            }
-        }        
-        stage('Upload to Docker Dev'){
-            when {
-                branch 'dev'
-            }
-            steps {
-                sh '''#!/bin/bash
-                    dockerpath=turnertechappdeveloper/capstone-rest:dev
-                    docker tag $(docker images --filter=reference='capstone-rest:dev' --format "{{.ID}}") $dockerpath
+                    dockerpath=turnertechappdeveloper/capstone-rest:${currentBuild.displayName}
+                    docker tag $(docker images --filter=reference='capstone-rest:${currentBuild.displayName}' --format "{{.ID}}") $dockerpath
                     docker push $dockerpath
                 '''
             }
         }
-        stage('Upload to Docker Prod'){
-            when {
-                branch 'prod'
-            }
-            steps {
-                sh '''#!/bin/bash
-                    dockerpath=turnertechappdeveloper/capstone-rest:latest
-                    docker tag $(docker images --filter=reference='capstone-rest:latest' --format "{{.ID}}") $dockerpath
-                    docker push $dockerpath
-                '''
-            }
-        }
-        stage('Update Dev Kubernetes') {
+        stage('Update Kubernetes') {
             when {
                 branch 'dev'
             }
             steps {
+                pod_name="rest-${BRANCH_NAME}"
                 sh '''#!/bin/bash
-                    kubectl set image pod/rest-dev rest-dev=turnertechappdeveloper/capstone-rest:dev
+                    kubectl set image pod/${pod_name} ${pod_name}=turnertechappdeveloper/capstone-rest:${currentBuild.displayName}
                 '''
                 sh '''kubectl describe pod rest-dev'''
             }
         }
-        stage('Update Prod Kubernetes') {
-            when {
-                branch 'prod'
-            }
-            steps {
-                sh '''#!/bin/bash
-                    kubectl set image pod/rest-dev rest-dev=turnertechappdeveloper/capstone-rest:latest                '''
-                sh '''kubectl describe pod rest-prod'''
-            }
-        }        
     }
 }
