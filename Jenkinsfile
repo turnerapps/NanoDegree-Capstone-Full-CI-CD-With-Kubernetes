@@ -10,6 +10,7 @@ pipeline {
                         skipFailedBuilds:    true)
                     currentBuild.displayName = BUILD_VERSION_GENERATED
                     pod_name="rest-${BRANCH_NAME}"
+                    dockerpath="turnertechappdeveloper/capstone-rest:${currentBuild.displayName}"
                 }
                 echo currentBuild.displayName
                 echo pod_name
@@ -42,7 +43,6 @@ pipeline {
         }
         stage('Upload to Docker'){
             steps {
-                dockerpath="turnertechappdeveloper/capstone-rest:${currentBuild.displayName}"
                 sh """#!/bin/bash
                     docker tag $(docker images --filter=reference='capstone-rest:${currentBuild.displayName}' --format "{{.ID}}") ${dockerpath}
                     docker push ${dockerpath}
