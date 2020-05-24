@@ -1,0 +1,265 @@
+Parameters:
+  EnvironmentName:
+    Description: The name of the environment. This will be used in resources and to name the Kubernetes Control Plane.
+    Type: String
+    Default: "Capstone-Rest"
+
+  VPCCidr:
+    AllowedPattern: '((\d{1,3})\.){3}\d{1,3}/\d{1,2}'
+    Default: 10.0.0.0/16
+    Description: VPC CIDR Block (eg 10.0.0.0/16)
+    Type: String
+
+  PublicSubnet1CIDR:
+    AllowedPattern: '((\d{1,3})\.){3}\d{1,3}/\d{1,2}'
+    Default: 10.0.1.0/24
+    Description: Public Subnet 1 CIDR Block (eg 10.0.1.0/24)
+    Type: String  
+
+  PublicSubnet2CIDR:
+    AllowedPattern: '((\d{1,3})\.){3}\d{1,3}/\d{1,2}'
+    Default: 10.0.2.0/24
+    Description: Public Subnet 2 CIDR Block (eg 10.0.2.0/24)
+    Type: String  
+
+  PrivateSubnet1CIDR:
+    AllowedPattern: '((\d{1,3})\.){3}\d{1,3}/\d{1,2}'
+    Default: 10.0.3.0/24
+    Description: Private Subnet 1 CIDR Block (eg 10.0.3.0/24)
+    Type: String  
+
+  PrivateSubnet2CIDR:
+    AllowedPattern: '((\d{1,3})\.){3}\d{1,3}/\d{1,2}'
+    Default: 10.0.4.0/24
+    Description: Private Subnet 2 CIDR Block (eg 10.0.4.0/24)
+    Type: String  
+        
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock:  !Ref VPCCidr
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+      - Key: Name
+        Value: !Sub '${AWS::StackName}-VPC'
+
+  InternetGateway:
+    Type: "AWS::EC2::InternetGateway"
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-Gateway'
+
+  InternetGatewayAttachment:
+    Type: "AWS::EC2::VPCGatewayAttachment"
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+
+  PublicRouteTable:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Public Routes
+      VpcId: !Ref VPC
+
+  PrivateRouteTable1:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Private Route AZ1
+      VpcId: !Ref VPC
+
+  PrivateRouteTable2:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Private Route AZ2
+      VpcId: !Ref VPC
+
+  PublicRoute:
+    Type: "AWS::EC2::Route"
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref PublicRouteTable
+  
+  PrivateRoute1:
+    Type: "AWS::EC2::Route"
+    DependsOn:
+      - InternetGatewayAttachment
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway1
+      RouteTableId: !Ref PrivateRouteTable1       
+      
+  PrivateRoute2:
+    Type: "AWS::EC2::Route"
+    DependsOn:
+      - InternetGatewayAttachment
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway2
+      RouteTableId: !Ref PrivateRouteTable2
+
+  NatGateway1:
+    DependsOn:
+      - InternetGatewayAttachment
+    Type: "AWS::EC2::NatGateway"
+    Properties:
+      AllocationId: !GetAtt NatGateway1IP.AllocationId
+      SubnetId: !Ref PublicSubnet1
+      Tags:
+      - Key: Name
+        Value: !Sub '${AWS::StackName}-NatGatewayAZ1'      
+
+  NatGateway2:
+    DependsOn:
+      - InternetGatewayAttachment
+    Type: "AWS::EC2::NatGateway"
+    Properties:
+      AllocationId: !GetAtt NatGateway2IP.AllocationId
+      SubnetId: !Ref PublicSubnet2
+      Tags:
+      - Key: Name
+        Value: !Sub '${AWS::StackName}-NatGatewayAZ2'
+
+  NatGateway1IP:
+    Type: "AWS::EC2::EIP"
+    DependsOn:
+      - InternetGatewayAttachment
+    Properties:
+      Domain: vpc  
+
+  NatGateway2IP:
+    Type: "AWS::EC2::EIP"
+    DependsOn:
+      - InternetGatewayAttachment
+    Properties:
+      Domain: vpc  
+
+  PublicSubnet1:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Select [ 0, !GetAZs '']
+      CidrBlock: !Ref PublicSubnet1CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+      - Key: Name
+        Value: !Sub "${AWS::StackName}-PublicSubnet1"
+      - Key: kubernetes.io/role/elb
+        Value: 1
+      VpcId: !Ref VPC
+
+  PublicSubnet2:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Select [ 1, !GetAZs '']
+      CidrBlock: !Ref PublicSubnet2CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+      - Key: Name
+        Value: !Sub "${AWS::StackName}-PublicSubnet2"
+      - Key: kubernetes.io/role/elb
+        Value: 1
+      VpcId: !Ref VPC
+
+  PrivateSubnet1:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Select [ 0, !GetAZs '']
+      CidrBlock: !Ref PrivateSubnet1CIDR
+      MapPublicIpOnLaunch: false
+      VpcId: !Ref VPC
+      Tags:
+      - Key: Name
+        Value: !Sub "${AWS::StackName}-PrivateSubnet1"
+      - Key: kubernetes.io/role/internal-elb
+        Value: 1      
+
+  PrivateSubnet2:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Select [ 1, !GetAZs '']
+      CidrBlock: !Ref PrivateSubnet2CIDR
+      MapPublicIpOnLaunch: false
+      VpcId: !Ref VPC    
+      Tags:
+      - Key: Name
+        Value: !Sub "${AWS::StackName}-PrivateSubnet2"
+      - Key: kubernetes.io/role/internal-elb
+        Value: 1      
+
+  PublicSubnet1RouteTableAssociation:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet1
+
+  PublicSubnet2RouteTableAssociation:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet2
+
+  PrivateSubnet1RouteTableAssociation:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      SubnetId: !Ref PrivateSubnet1
+
+  PrivateSubnet2RouteTableAssociation:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable2
+      SubnetId: !Ref PrivateSubnet2
+      
+  ControlPlaneSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Cluster communication with worker nodes
+      VpcId: !Ref VPC
+
+  K8SCluster:
+    Type: "AWS::EKS::Cluster"
+    Properties:
+      RoleArn: 'arn:aws:iam::508650621972:role/eks-cluster-role'
+      ResourcesVpcConfig: 
+        SecurityGroupIds:
+          - !Ref ControlPlaneSecurityGroup
+        SubnetIds:
+          - !Ref PrivateSubnet1
+          - !Ref PrivateSubnet2
+      Name: !Sub "${AWS::StackName}-Cluster"
+  
+  K8SNodeGroup1:
+    Type: "AWS::EKS::Nodegroup"
+    Properties:
+      ScalingConfig:
+        DesiredSize: 1
+        MaxSize: 1
+        MinSize: 1
+      NodegroupName: !Sub "${AWS::StackName}-AZ1-NodeGroup"
+      Subnets: 
+        - !Ref PrivateSubnet1
+      NodeRole: 'arn:aws:iam::508650621972:role/NodeInstanceRole'
+      ClusterName: !Ref K8SCluster
+  
+  K8SNodeGroup2:
+    Type: "AWS::EKS::Nodegroup"
+    Properties:
+      ScalingConfig:
+        DesiredSize: 1
+        MaxSize: 1
+        MinSize: 1
+      NodegroupName: !Sub "${AWS::StackName}-AZ2-NodeGroup"
+      Subnets: 
+        - !Ref PrivateSubnet2
+      NodeRole: 'arn:aws:iam::508650621972:role/NodeInstanceRole'
+      ClusterName: !Ref K8SCluster  
