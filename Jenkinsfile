@@ -26,7 +26,9 @@ pipeline {
         stage('Upload to Docker'){
             steps {
                 sh '''#!/bin/bash
-                    ./upload_docker.sh
+                    dockerpath=turnertechappdeveloper/capstone-rest
+                    docker tag $(docker images --filter=reference='prediction:latest' --format "{{.ID}}") $dockerpath
+                    docker push $dockerpath
                 '''
             }
         }
