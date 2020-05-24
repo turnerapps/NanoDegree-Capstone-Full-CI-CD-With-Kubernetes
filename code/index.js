@@ -1,10 +1,11 @@
-import moment from 'moment';
-import express, { application } from 'express';
+//import moment from 'moment';
+import express from 'express';
 
 const app = express();
+const PORT = process.env.PORT || 8080;
 
 app.get('/', (_req, res) => {
-    res.json({ message: 'You found the REST Api Homepage.' })
+    res.json({ message: 'You found the REST Api Homepage.' });
 });
 
 app.use((req, res) => {
@@ -13,4 +14,4 @@ app.use((req, res) => {
 
 app.listen(PORT, () => {
     console.log(`Listening on localhost:${PORT}`);
-})
+});
